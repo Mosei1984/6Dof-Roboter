@@ -1,0 +1,29 @@
+Steppers:
+
+From www.omc-stepperonline.com models:
+	17HS13-0404S-PG5 (Nema 17 with 5:1 planetary gearbox)
+	14HR05-0504S (Round Nema 14 7Ncm)
+	14HS08-0404S (Nema 14 5Ncm)
+	17HS16-2004S1 (Nema 17 45Ncm)
+
+From banggood.com:
+	Nema 17 (https://www.banggood.com/42mm-12V-Nema-17-Two-Phase-Stepper-Motor-For-3D-Printer-p-1164619.html?rmmds=myorder&cur_warehouse=CN)
+	Nema 8 (https://www.banggood.com/JKM-NEMA8-1_820-Hybrid-Stepper-Motor-Two-Phase-30mm-Motor-For-CNC-Mill-Router-p-980604.html?rmmds=myorder&cur_warehouse=CN)
+
+Limit switches:
+	https://www.banggood.com/10Pcs-Micro-Limit-Switch-Roller-Lever-5A-125V-Open-Close-Switch-p-945733.html?rmmds=myorder&cur_warehouse=CN
+
+Pulleys and belts:
+	GT2 16tooth (4pcs)
+	GT2 16tooth timing pulley without tooth (2pcs)
+	GT2 6mm closed loop belts (280mm 2pcs, 200mm 1pcs, 158mm 1pcs)
+	HTD3 16T pulley
+	HTD3 closed belt 330mm
+
+Bearings:
+	608 8x22x7 (2pcs)
+	625 5x16x5 (4pcs)
+	6002 15x32x9 (4pcs)
+	20X35X10 axial ball bearing (1pcs, originally used 2 but only needs one between stand and base)
+
+Bunch of nuts and bolts mainly m3 and m4 hex head (M8 bolts on the stand, base (for HTD3 tensioner bearings) and Arm2 mount)
