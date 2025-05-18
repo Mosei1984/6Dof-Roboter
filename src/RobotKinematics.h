@@ -41,6 +41,9 @@ public:
     void          setCurrentJointAngles(const JointAngles& angles);
     JointAngles   getCurrentJointAngles() const;
     CartesianPose getCurrentPose() const;
+    
+    // NEW: Getter for robot configuration
+    const RobotConfig& getConfig() const { return _config; }
 
     // Werkzeug-Offset nachträglich ändern
     void setToolOffset(float x, float y, float z);

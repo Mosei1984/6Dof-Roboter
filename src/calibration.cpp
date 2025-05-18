@@ -1,15 +1,13 @@
 #include "calibration.h"
 #include "joystick.h"
-
-extern Joystick* leftJoystick;
-extern Joystick* rightJoystick;
+#include "JoystickSystem.h"  // Add this include
 
 bool Calibration::_isCalibrating = false;
 
 void Calibration::calibrateJoysticks() {
-    // Grundkalibrierung für Zentrum
-    leftJoystick->calibrate();
-    rightJoystick->calibrate();
+    // Get joystick instances from JoystickSystem instead of using globals
+    JoystickSystem::leftJoystick->calibrate();
+    JoystickSystem::rightJoystick->calibrate();
 }
 
 // Implementierung für den Setter
@@ -24,8 +22,8 @@ void Calibration::startFullCalibration() {
     _isCalibrating = true;
     
     // Starte die erweiterte Kalibrierung für beide Joysticks
-    leftJoystick->startCalibration();
-    rightJoystick->startCalibration();
+    JoystickSystem::leftJoystick->startCalibration();
+    JoystickSystem::rightJoystick->startCalibration();
     
     _isCalibrating = false;
 }

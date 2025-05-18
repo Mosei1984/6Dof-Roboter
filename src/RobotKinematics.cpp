@@ -1,7 +1,7 @@
 #include "RobotKinematics.h"
 #include <Arduino.h>
 #include <math.h>
-
+#include "Debug.h"
 // Hilfs-Makros
 #define RAD2DEG(x) ((x)*180.0/M_PI)
 #define DEG2RAD(x) ((x)*M_PI/180.0)
@@ -78,7 +78,7 @@ CartesianPose RobotKinematics::forwardKinematics(const JointAngles& angles) {
   Serial.print(" Z=");             Serial.print(ez);
   Serial.print(" | Yaw=");         Serial.print(RAD2DEG(yaw));
   Serial.print(" Pitch=");         Serial.print(RAD2DEG(pitch));
-  Serial.print(" Roll=");          Serial.println(RAD2DEG(roll));
+  Serial.print(" Roll=");          Debug::println(RAD2DEG(roll));
 
   return result;
 }
@@ -110,7 +110,7 @@ bool RobotKinematics::inverseKinematics(const CartesianPose& targetPose, JointAn
   float a3 = _config.dhParams[2].a;
   float d  = sqrt(wx*wx + wy*wy + wz*wz);
   if (d > (a2 + a3) || d < fabs(a2 - a3)) {
-    Serial.println("IK fehlerhaft außerhalb Reichweite");
+    Debug::println("IK fehlerhaft außerhalb Reichweite");
     return false;
   }
 

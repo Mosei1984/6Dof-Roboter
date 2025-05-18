@@ -1,6 +1,6 @@
 #include "joystick.h"
 #include "config.h"    // definiert JoystickConfig und _joystickConfig
-
+#include "Debug.h"
 extern JoystickConfig _joystickConfig;
 Joystick::Joystick(int xPin, int yPin, int btnPin)
     : _xPin(xPin), _yPin(yPin), _btnPin(btnPin), 
@@ -45,8 +45,8 @@ void Joystick::startCalibration() {
     calibrate();
     
     // Visuelle Anzeige für den Kalibrierungsstart
-    Serial.println("Bewege Joystick in alle Richtungen!");
-    Serial.println("5 Sekunden zum Kalibrieren...");
+    Debug::println("Bewege Joystick in alle Richtungen!");
+    Debug::println("5 Sekunden zum Kalibrieren...");
     
     // Min/Max-Werte sammeln
     unsigned long startTime = millis();
@@ -65,7 +65,7 @@ void Joystick::startCalibration() {
     
     // Min/Max-Werte speichern
     saveMinMax(xMin, xMax, yMin, yMax);
-    Serial.println("Kalibrierung abgeschlossen!");
+    Debug::println("Kalibrierung abgeschlossen!");
 }
 
 void Joystick::saveMinMax(int xMin, int xMax, int yMin, int yMax) {
@@ -74,13 +74,13 @@ void Joystick::saveMinMax(int xMin, int xMax, int yMin, int yMax) {
     _yMin = yMin;
     _yMax = yMax;
     
-    Serial.println("Kalibrierungswerte:");
-    Serial.print("X: Min="); Serial.print(_xMin);
-    Serial.print(" Center="); Serial.print(_xCenter);
-    Serial.print(" Max="); Serial.println(_xMax);
-    Serial.print("Y: Min="); Serial.print(_yMin);
-    Serial.print(" Center="); Serial.print(_yCenter);
-    Serial.print(" Max="); Serial.println(_yMax);
+    Debug::println("Kalibrierungswerte:");
+    Debug::print("X: Min="); Debug::print(_xMin);
+    Debug::print(" Center="); Debug::print(_xCenter);
+    Debug::print(" Max="); Debug::println(_xMax);
+    Debug::print("Y: Min="); Debug::print(_yMin);
+    Debug::print(" Center="); Debug::print(_yCenter);
+    Debug::print(" Max="); Debug::println(_yMax);
 }
 
 void Joystick::read() {
