@@ -4,28 +4,28 @@
 #include "RobotSystem.h"
 #include "StepperSystem.h"
 #include "DisplaySystem.h"
+#include "kalmanfilter.h"
 
-namespace RobotSystem {
-    void processHomingMenuSelection();
-}
+extern JoystickConfig _joystickConfig;
+extern PinConfig _pinConfig;
 
 namespace JoystickSystem {
-    // Joystick objects
+    // Joystick instances
     Joystick* leftJoystick = nullptr;
     Joystick* rightJoystick = nullptr;
     
-    // Selected joint for joint mode
-    static int selectedJoint = 0;
-    
-    // Current joystick state for joint selection
+    // Joystick states for detecting direction changes
     static JoystickState joystickXState = JOYSTICK_CENTERED;
+    static JoystickState joystickYState = JOYSTICK_CENTERED;
     
     // Button state tracking
     static bool rightButtonPressed = false;
-    static bool leftButtonPressed = false;  // Track left button too
+    static bool leftButtonPressed = false;
+    
+    // Timing
     static unsigned long lastButtonCheckTime = 0;
     
-    // Kalman filters for smooth movement
+    // Kalman filters for smooth movements
     static KalmanFilter positionFilterX(0.01, 0.1);
     static KalmanFilter positionFilterY(0.01, 0.1);
     static KalmanFilter positionFilterZ(0.01, 0.1);
@@ -59,151 +59,24 @@ namespace JoystickSystem {
     
     // Basic joystick calibration
     void calibrateJoysticks() {
-        if (leftJoystick && rightJoystick) {
-            Debug::println(F("Performing basic joystick calibration..."));
-            leftJoystick->calibrate();
-            rightJoystick->calibrate();
-            Debug::println(F("Basic calibration complete"));
-        } else {
-            Debug::println(F("ERROR: Cannot calibrate - joysticks not initialized!"));
-        }
+        leftJoystick->calibrate();
+        rightJoystick->calibrate();
+        Debug::println(F("Basic joystick calibration complete"));
     }
     
-    // Full joystick calibration
+    // Full calibration process
     void startFullCalibration() {
-        if (leftJoystick && rightJoystick) {
-            Debug::println(F("Starting full joystick calibration..."));
-            
-            // Start the extended calibration for both joysticks
-            leftJoystick->startCalibration();
-            rightJoystick->startCalibration();
-            
-            Debug::println(F("Full calibration complete"));
-        } else {
-            Debug::println(F("ERROR: Cannot calibrate - joysticks not initialized!"));
-        }
+        Debug::println(F("Starting full joystick calibration"));
+        DisplaySystem::showCalibrationInProgress();
+        
+        // Start the full calibration for both joysticks
+        leftJoystick->startCalibration();
+        rightJoystick->startCalibration();
+        
+        DisplaySystem::showCalibrationComplete();
+        Debug::println(F("Full joystick calibration complete"));
     }
     
-    // Get selected joint
-    int getSelectedJoint() {
-        return selectedJoint;
-    }
-    
-    // Set selected joint
-    void setSelectedJoint(int joint) {
-        selectedJoint = joint;
-    }
-
-    // Process button input for mode changes
-    void processButtonInput() {
-        if (!leftJoystick || !rightJoystick) return;
-        
-        // Aktuelle Tastendrücke auslesen
-        bool leftCurrentlyPressed = leftJoystick->isPressed();
-        bool rightCurrentlyPressed = rightJoystick->isPressed();
-        
-        // Aktuellen Systemzustand holen
-        RobotSystem::SystemState currentState = RobotSystem::getState();
-        unsigned long stateChangeTime = RobotSystem::getStateChangeTime();
-        
-        // Entprellen: Verzögerung zwischen Button-Aktionen erzwingen
-        unsigned long now = millis();
-        if (now - lastButtonCheckTime < 200) return;
-        
-        // ===== RECHTER BUTTON: MODUS-WECHSEL =====
-        // Steigende Flanke erkennen (nicht gedrückt -> gedrückt)
-        if (rightCurrentlyPressed && !rightButtonPressed) {
-            rightButtonPressed = true;  // Status aktualisieren
-            
-            // Nur wenn genug Zeit seit dem letzten Statuswechsel vergangen ist
-            if (now - stateChangeTime > 500) {
-                lastButtonCheckTime = now;  // Zeitstempel aktualisieren
-                
-                // Debug Ausgabe VOR der Änderung
-                Debug::print(F("Mode changing from: "));
-                Debug::println(currentState);
-                
-                // Modiwechsel durchführen
-                switch (currentState) {
-                    case RobotSystem::STATE_JOINT_MODE:
-                        RobotSystem::setState(RobotSystem::STATE_KINEMATIC_MODE);
-                        break;
-                        
-                    case RobotSystem::STATE_KINEMATIC_MODE:
-                        // Kinematik-Modus sauber verlassen
-                        exitKinematicMode();
-                        RobotSystem::setState(RobotSystem::STATE_HOMING_MODE);
-                        RobotSystem::setHomingStarted(false);
-                        RobotSystem::setHomingJointIndex(0);
-                        break;
-                        
-                    case RobotSystem::STATE_HOMING_MODE:
-                        RobotSystem::setState(RobotSystem::STATE_CALIBRATION_MODE);
-                        break;
-                        
-                    case RobotSystem::STATE_CALIBRATION_MODE:
-                        RobotSystem::setState(RobotSystem::STATE_JOINT_MODE);
-                        break;
-                        
-                    default:
-                        // Bei unbekanntem Zustand auf JOINT_MODE wechseln
-                        RobotSystem::setState(RobotSystem::STATE_JOINT_MODE);
-                        break;
-                }
-                
-                // Debug Ausgabe NACH der Änderung
-                Debug::print(F("State changed to: "));
-                Debug::println(RobotSystem::getState());
-                RobotSystem::setStateChangeTime(now);
-            }
-        }
-        // Fallende Flanke des rechten Buttons erkennen
-        else if (!rightCurrentlyPressed && rightButtonPressed) {
-            rightButtonPressed = false;
-        }
-        
-        // ===== LINKER BUTTON: AKTIONEN IM MODUS =====
-        // Steigende Flanke erkennen
-        if (leftCurrentlyPressed && !leftButtonPressed) {
-            leftButtonPressed = true;  // Status aktualisieren
-            
-            // Nur wenn genug Zeit seit dem letzten Statuswechsel vergangen ist
-            if (now - stateChangeTime > 500) {
-                lastButtonCheckTime = now;  // Zeitstempel aktualisieren
-                
-                // Aktionen je nach Modus
-                switch (currentState) {
-                    case RobotSystem::STATE_HOMING_MODE:
-                        if (!RobotSystem::isHomingStarted()) {
-                            Debug::println(F("Homing Menu: Processing selection"));
-                            RobotSystem::processHomingMenuSelection();
-                        }
-                        break;
-                        
-                    case RobotSystem::STATE_CALIBRATION_MODE:
-                        Debug::println(F("Starting manual calibration"));
-                        DisplaySystem::showMessage("CALIBRATING...", "Move joysticks to all positions");
-                        startFullCalibration();
-                        DisplaySystem::showMessage("CALIBRATION COMPLETE", "Press right button to continue");
-                        delay(2000);
-                        break;
-                        
-                    default:
-                        // Keine spezielle Aktion für andere Modi
-                        break;
-                }
-                
-                RobotSystem::setStateChangeTime(now);
-            }
-        }
-        // Fallende Flanke des linken Buttons erkennen
-        else if (!leftCurrentlyPressed && leftButtonPressed) {
-            leftButtonPressed = false;
-            RobotSystem::setCalibrationLocked(false);
-        }
-    }
-    
-    // Process joint control mode
     void processJointControl() {
         if (!leftJoystick || !rightJoystick) return;
         
@@ -217,18 +90,18 @@ namespace JoystickSystem {
         float rightX = (rightJoystick->getX() - 500.0f) / 500.0f;  // to [-1..+1]
         if (rightX > 0.7f && joystickXState == JOYSTICK_CENTERED) {
             joystickXState = JOYSTICK_RIGHT;
-            if (selectedJoint < 5) {
-                selectedJoint++;
+            if (StepperSystem::getSelectedJoint() < 5) {
+                StepperSystem::setSelectedJoint(StepperSystem::getSelectedJoint() + 1);
                 Debug::print(F("Joint increased to: "));
-                Debug::println(selectedJoint + 1);
+                Debug::println(StepperSystem::getSelectedJoint() + 1);
             }
         }
         else if (rightX < -0.7f && joystickXState == JOYSTICK_CENTERED) {
             joystickXState = JOYSTICK_LEFT;
-            if (selectedJoint > 0) {
-                selectedJoint--;
+            if (StepperSystem::getSelectedJoint() > 0) {
+                StepperSystem::setSelectedJoint(StepperSystem::getSelectedJoint() - 1);
                 Debug::print(F("Joint decreased to: "));
-                Debug::println(selectedJoint + 1);
+                Debug::println(StepperSystem::getSelectedJoint() + 1);
             }
         }
         else if (fabs(rightX) < 0.4f) {
@@ -236,28 +109,25 @@ namespace JoystickSystem {
         }
         
         // Joint movement with left joystick X (with deadband)
-        float rawX = leftJoystick->getX();
-        float deadband = _joystickConfig.deadband;
-        
-        // Apply deadband
-        if (fabs(rawX - 500.0f) < deadband) {
-            rawX = 500.0f;  // center value
-        }
-        
+        float rawX = leftJoystick->getXWithDeadband(_joystickConfig.deadband);
         // Normalize to [-1..+1]
         float norm = (rawX - 500.0f) / 500.0f;
+        
         Debug::print(F("Joint mode: rawX w/ deadzone = "));
         Debug::print(rawX);
         Debug::print(F(" → norm = "));
         Debug::println(norm);
         
+        int selectedJoint = StepperSystem::getSelectedJoint();
+        
         // Set speed
-        if (fabs(norm) < 0.01f) {  // effectively zero
+        if (rawX == 0.0f) {
+            // In deadzone = stop
             StepperSystem::steppers[selectedJoint]->setSpeed(0);
         } else {
             // Full sensitivity: ±maxSpeed at |norm|==1
             float spd = -norm * _stepperConfig[selectedJoint].maxSpeed;
-            Debug::print(F(" -> Setting speed for Joint "));
+            Debug::print(F(" -> Setting speed for joint "));
             Debug::print(selectedJoint);
             Debug::print(F(": "));
             Debug::println(spd);
@@ -268,30 +138,23 @@ namespace JoystickSystem {
         StepperSystem::steppers[selectedJoint]->runSpeed();
     }
     
-    // Process kinematic control mode
     void processKinematicControl() {
         if (!leftJoystick || !rightJoystick) return;
-        
         Debug::println(F("=== processKinematicControl() start ==="));
         
-        // Get joystick values
+        // 1) Joystick raw values
         float leftX = leftJoystick->getNormalizedX();
         float leftY = leftJoystick->getNormalizedY();
         float rightX = rightJoystick->getNormalizedX();
         float rightY = rightJoystick->getNormalizedY();
         
-        // Reset filter when joysticks are released
+        // Filter reset when stopping
         static bool wasMoving = false;
         bool isMoving = (fabs(leftX) > 0.01f) || (fabs(leftY) > 0.01f) ||
                         (fabs(rightX) > 0.01f) || (fabs(rightY) > 0.01f);
         
-        static KalmanFilter positionFilterX(0.01, 0.1);
-        static KalmanFilter positionFilterY(0.01, 0.1);
-        static KalmanFilter positionFilterZ(0.01, 0.1);
-        static KalmanFilter rotationFilter(0.01, 0.1);
-        
         if (!isMoving && wasMoving) {
-            // Joystick was released - reset filters
+            // Joystick released -> reset filters
             positionFilterX.reset();
             positionFilterY.reset();
             positionFilterZ.reset();
@@ -305,11 +168,12 @@ namespace JoystickSystem {
         Debug::print(F("  Rx=")); Debug::print(rightX, 2);
         Debug::print(F("  Ry=")); Debug::println(rightY, 2);
         
-        // Dynamically set speed based on joystick movement
+        // 2) Dynamically set speed based on joystick movement
         float speedFactor = max(max(fabs(leftX), fabs(leftY)),
                                max(fabs(rightX), fabs(rightY)));
         float dynSpd = speedFactor * 100.0f;
         float dynAcc = dynSpd * 2.0f;
+        
         for (int i = 0; i < 6; ++i) {
             StepperSystem::steppers[i]->setMaxSpeed(dynSpd);
             StepperSystem::steppers[i]->setAcceleration(dynAcc);
@@ -318,7 +182,7 @@ namespace JoystickSystem {
         Debug::print(F("  dynSpd=")); Debug::print(dynSpd, 1);
         Debug::print(F("  dynAcc=")); Debug::println(dynAcc, 1);
         
-        // Calculate changes via filters
+        // 3) Calculate changes via filters
         CartesianPose current = RobotSystem::getKinematics()->getCurrentPose();
         float xChg = positionFilterX.update(leftX * 1.0f);
         float yChg = positionFilterY.update(-leftY * 1.0f);
@@ -330,27 +194,24 @@ namespace JoystickSystem {
         Debug::print(F("  zChg=")); Debug::print(zChg, 3);
         Debug::print(F("  yawChg=")); Debug::println(yawChg, 4);
         
-        // Only move if there's significant change
+        // 5) Only move if there's significant change
         if (fabs(xChg) > 0.01f || fabs(yChg) > 0.01f ||
             fabs(zChg) > 0.01f || fabs(yawChg) > 0.001f) {
             
-            // Calculate target pose
+            // 6) Calculate target pose and clamp
             CartesianPose target = current;
             target.x += xChg;
             target.y += yChg;
             target.z += zChg;
             target.yaw += yawChg;
             
-            // Apply workspace limits (simplified)
-            RobotConfig robotConfig = RobotSystem::getKinematics()->getConfig();
-            const float a1 = robotConfig.dhParams[1].a;
-            const float a2 = robotConfig.dhParams[2].a;
-            const float maxRad = a1 + a2;
-            const float minZ = robotConfig.dhParams[0].d;
-            const float maxZ = minZ + maxRad;
+            // Get workspace limits from kinematics
+            float maxReach = RobotSystem::getKinematics()->getMaxReach();
+            float minZ = RobotSystem::getKinematics()->getBaseHeight();
+            float maxZ = minZ + maxReach;
             
-            target.x = constrain(target.x, -maxRad, +maxRad);
-            target.y = constrain(target.y, -maxRad, +maxRad);
+            target.x = constrain(target.x, -maxReach, +maxReach);
+            target.y = constrain(target.y, -maxReach, +maxReach);
             target.z = constrain(target.z, minZ, maxZ);
             
             Debug::print(F("  Kinematic target: X=")); Debug::print(target.x, 2);
@@ -358,41 +219,115 @@ namespace JoystickSystem {
             Debug::print(F("  Z=")); Debug::println(target.z, 2);
             Debug::print(F("               Yaw=")); Debug::println(target.yaw, 3);
             
-            // Call inverse kinematics
+            // 7) Call IK
             JointAngles newAngles;
             if (RobotSystem::getKinematics()->inverseKinematics(target, newAngles)) {
-                // Set stepper targets based on calculated angles
                 for (int i = 0; i < 6; ++i) {
                     float deg = newAngles.angles[i] * 180.0 / M_PI;
                     long steps = deg * _stepperConfig[i].stepsPerDegree;
                     StepperSystem::steppers[i]->moveTo(steps);
                 }
                 
-                // Update kinematics with new angles
+                // Update kinematics
                 RobotSystem::getKinematics()->setCurrentJointAngles(newAngles);
             } else {
                 Debug::println(F("  IK error: Movement skipped"));
-                
-                // Reset stepper targets to current position
+                // Set stepper targets to current position to prevent continued movement
                 for (int i = 0; i < 6; ++i) {
                     StepperSystem::steppers[i]->moveTo(StepperSystem::steppers[i]->currentPosition());
                 }
             }
-        } // End threshold-IF
+        }
         
         Debug::println(F("=== processKinematicControl() end ==="));
     }
     
-    // Additional utility function to exit kinematic mode
-    void exitKinematicMode() {
-        // Stop all motors at current position
-        for (int i = 0; i < 6; ++i) {
-            StepperSystem::steppers[i]->moveTo(StepperSystem::steppers[i]->currentPosition());
+    void processButtonInput() {
+        if (!leftJoystick || !rightJoystick) return;
+        
+        bool leftPressed = leftJoystick->isPressed();
+        bool rightPressed = rightJoystick->isPressed();
+        
+        // Debounce
+        if (millis() - lastButtonCheckTime < 200) return;
+        
+        // Right button: Mode switch
+        if (rightPressed && !rightButtonPressed) {
+            if (millis() - RobotSystem::getStateChangeTime() > 500) {
+                rightButtonPressed = true;
+                lastButtonCheckTime = millis();
+                
+                // Cycle through modes
+                RobotSystem::SystemState currentState = RobotSystem::getState();
+                
+                if (currentState == RobotSystem::STATE_JOINT_MODE) {
+                    RobotSystem::setState(RobotSystem::STATE_KINEMATIC_MODE);
+                } else if (currentState == RobotSystem::STATE_KINEMATIC_MODE) {
+                    // Clean exit from kinematic mode
+                    for (int i = 0; i < 6; ++i) {
+                        StepperSystem::steppers[i]->moveTo(StepperSystem::steppers[i]->currentPosition());
+                    }
+                    StepperSystem::synchronizeWithKinematics();
+                    RobotSystem::setState(RobotSystem::STATE_HOMING_MODE);
+                    RobotSystem::setHomingStarted(false);
+                    RobotSystem::setHomingJointIndex(0);
+                } else if (currentState == RobotSystem::STATE_HOMING_MODE) {
+                    RobotSystem::setState(RobotSystem::STATE_GEAR_CONFIG_MODE);
+                    DisplaySystem::setGearMenuActive(true);
+                } else if (currentState == RobotSystem::STATE_GEAR_CONFIG_MODE) {
+                    DisplaySystem::setGearMenuActive(false);
+                    RobotSystem::setState(RobotSystem::STATE_CALIBRATION_MODE);
+                } else if (currentState == RobotSystem::STATE_CALIBRATION_MODE) {
+                    RobotSystem::setState(RobotSystem::STATE_JOINT_MODE);
+                }
+                
+                Debug::print(F("Mode changed to: "));
+                Debug::println(RobotSystem::getState());
+                RobotSystem::setStateChangeTime(millis());
+            }
+        } else if (!rightPressed) {
+            rightButtonPressed = false;
         }
         
-        // Synchronize kinematics model
-        StepperSystem::synchronizeKinematicsWithSteppers();
-        
-        Debug::println(F("Exited kinematic mode"));
+        // Left button: Action in current mode
+        if (leftPressed && !leftButtonPressed) {
+            if (millis() - RobotSystem::getStateChangeTime() > 500) {
+                leftButtonPressed = true;
+                lastButtonCheckTime = millis();
+                
+                RobotSystem::SystemState currentState = RobotSystem::getState();
+                
+                if (currentState == RobotSystem::STATE_HOMING_MODE && !RobotSystem::isHomingStarted()) {
+                    RobotSystem::setHomingStarted(true);
+                    Debug::println(F("Homing started"));
+                } else if (currentState == RobotSystem::STATE_CALIBRATION_MODE) {
+                    Debug::println(F("Starting manual calibration"));
+                    DisplaySystem::showCalibrationInProgress();
+                    startFullCalibration();
+                }
+                
+                RobotSystem::setStateChangeTime(millis());
+            }
+        } else if (!leftPressed) {
+            leftButtonPressed = false;
+            RobotSystem::setCalibrationLocked(false);
+        }
+    }
+    
+    JoystickState getJoystickXState() {
+        return joystickXState;
+    }
+    
+    JoystickState getJoystickYState() {
+        return joystickYState;
+    }
+    
+    bool isLeftButtonPressed() {
+        return leftJoystick && leftJoystick->isPressed();
+    }
+    
+    bool isRightButtonPressed() {
+        return rightJoystick && rightJoystick->isPressed();
     }
 }
+

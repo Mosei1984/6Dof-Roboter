@@ -1,6 +1,7 @@
 #pragma once
 #include <Arduino.h>
 #include <AccelStepper.h>
+#include "RobotKinematics.h"
 
 extern const unsigned char PROGMEM robotArmBitmap[];
 
@@ -24,12 +25,12 @@ struct JoystickConfig {
   float sensitivity;  // Empfindlichkeit für Joystick-Bewegungen
 };
 
-// Stepper-Konfiguration
+// Definition der StepperConfig-Struktur
 struct StepperConfig {
   float stepsPerDegree;  // Schritte pro Grad
-  float maxSpeed;        // Maximale Geschwindigkeit in Schritten/Sekunde
-  float acceleration;    // Beschleunigung in Schritten/Sekunde²
-  float homingSpeed;     // Geschwindigkeit beim Homing in Schritten/Sekunde
+  float maxSpeed;        // Maximale Geschwindigkeit
+  float acceleration;    // Beschleunigung
+  float homingSpeed;     // Geschwindigkeit beim Homing
   long minPosition;      // Minimale Position in Schritten
   long maxPosition;      // Maximale Position in Schritten
 };
@@ -39,6 +40,14 @@ extern PinConfig _pinConfig;
 extern JoystickConfig _joystickConfig;
 extern StepperConfig _stepperConfig[6];
 extern AccelStepper* _steppers[6];
+
+// Globale Roboterkonfiguration
+extern RobotConfig g_robotConfig;
+
+// Funktionen für Konfigurationsspeicherung
+bool saveConfigToSD();
+bool loadConfigFromSD();
+bool resetConfigToDefaults();
 
 // Konfigurationsfunktionen
 void loadDefaultPinConfig();

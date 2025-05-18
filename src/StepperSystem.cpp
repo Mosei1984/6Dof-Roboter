@@ -1,25 +1,41 @@
 #include "StepperSystem.h"
 #include "Debug.h"
-#include "config.h"
 #include "RobotSystem.h"
-#include "JoystickSystem.h"
-#include "DisplaySystem.h"
+#include "ConfigSystem.h"
+
+// External configuration references
+extern PinConfig _pinConfig;
+extern StepperConfig _stepperConfig[6];
 
 namespace StepperSystem {
-    // Array of stepper motor pointers
+    // Array of stepper motor instances
     AccelStepper* steppers[6] = {nullptr};
+    void synchronizeWithKinematics() {
+        JointAngles ja;
+        for (int i = 0; i < 6; i++) {
+            long steps = steppers[i]->currentPosition();
+            float angle = steps / _stepperConfig[i].stepsPerDegree;
+            ja.angles[i] = angle;
+        }
+        RobotSystem::getKinematics()->setCurrentJointAngles(ja);
+    }
+    
+    // Selected joint for joint mode
+    int selectedJoint = 0;
     
     void init() {
         Debug::println(F("Initializing stepper system..."));
         
-        // Initialize steppers and limit switches
+        // Initialize each stepper motor
         for (int i = 0; i < 6; i++) {
-            // Set Step/Dir pins for each motor
-            steppers[i] = new AccelStepper(AccelStepper::DRIVER, 
-                                      _pinConfig.stepperPins[i][0],   // STEP Pin
-                                      _pinConfig.stepperPins[i][1]);  // DIR Pin
+            // Create stepper with Step/Dir pins
+            steppers[i] = new AccelStepper(
+                AccelStepper::DRIVER, 
+                _pinConfig.stepperPins[i][0],   // STEP Pin
+                _pinConfig.stepperPins[i][1]    // DIR Pin
+            );
             
-            // Debug: Output stepper pins
+            // Debug output of stepper pins
             Debug::print(F("Stepper "));
             Debug::print(i);
             Debug::print(F(" Pins - STEP: "));
@@ -29,18 +45,18 @@ namespace StepperSystem {
             Debug::print(F(", ENABLE: "));
             Debug::println(_pinConfig.stepperPins[i][2]);
             
-            // Set ENABLE pin as OUTPUT
+            // Set enable pin as OUTPUT
             pinMode(_pinConfig.stepperPins[i][2], OUTPUT);
-            digitalWrite(_pinConfig.stepperPins[i][2], HIGH);  // Disable at start (active LOW)
+            digitalWrite(_pinConfig.stepperPins[i][2], HIGH);  // Initially disabled (active LOW)
             
-            // Set Limit/Endstop pin as INPUT with Pull-up
+            // Set limit/endstop pin as INPUT with pull-up
             pinMode(_pinConfig.stepperPins[i][3], INPUT_PULLUP);
             
-            // Set stepper parameters
+            // Configure stepper parameters
             steppers[i]->setMaxSpeed(_stepperConfig[i].maxSpeed);
             steppers[i]->setAcceleration(_stepperConfig[i].acceleration);
             
-            // Debug: Output stepper configuration
+            // Debug stepper configuration
             Debug::print(F("Stepper "));
             Debug::print(i);
             Debug::print(F(" Config - MaxSpeed: "));
@@ -51,54 +67,21 @@ namespace StepperSystem {
             Debug::println(_stepperConfig[i].stepsPerDegree);
         }
         
-        // Test stepper motors (basic movement)
-        testSteppers();
-        
         Debug::println(F("Stepper system initialized"));
-    }
-    
-    void update() {
-        // Update all steppers (high frequency)
-        bool anyMotorRunning = false;
-        for (int i = 0; i < 6; i++) {
-            if (steppers[i]->distanceToGo() != 0) {
-                steppers[i]->run();
-                anyMotorRunning = true;
-                
-                // If the motor is moving, we output it
-                if (i == JoystickSystem::getSelectedJoint()) {  // Use JoystickSystem function here
-                    Debug::print(F("Stepper "));
-                    Debug::print(i);
-                    Debug::print(F(" moving to position "));
-                    Debug::print(steppers[i]->targetPosition());
-                    Debug::print(F(", current: "));
-                    Debug::print(steppers[i]->currentPosition());
-                    Debug::print(F(", remaining: "));
-                    Debug::println(steppers[i]->distanceToGo());
-                }
-            } else {
-                // Disable motor when target is reached
-                digitalWrite(_pinConfig.stepperPins[i][2], HIGH);
-            }
-        }
-        
-        // If motors were moved, synchronize the kinematics model
-        if (anyMotorRunning) {
-            synchronizeKinematicsWithSteppers();
-        }
     }
     
     void testSteppers() {
         Debug::println(F("Testing stepper communication..."));
+        
         for (int i = 0; i < 6; i++) {
             // Enable motor
             digitalWrite(_pinConfig.stepperPins[i][2], LOW);
             
-            // Execute short movement
+            // Perform short movement
             steppers[i]->setCurrentPosition(0);
             steppers[i]->moveTo(100);  // 100 steps forward
             
-            // Wait for movement
+            // Wait for movement to complete
             while (steppers[i]->distanceToGo() != 0) {
                 steppers[i]->run();
                 delay(1);
@@ -106,7 +89,7 @@ namespace StepperSystem {
             
             delay(200);  // Short pause
             
-            // Back to start position
+            // Back to starting position
             steppers[i]->moveTo(0);
             
             while (steppers[i]->distanceToGo() != 0) {
@@ -123,77 +106,116 @@ namespace StepperSystem {
             
             delay(500);  // Pause between tests
         }
+        
+        Debug::println(F("Stepper test completed"));
+    }
+    
+    void update() {
+        // Motor movement logic for all axes
+        bool anyMotorRunning = false;
+        
+        for (int i = 0; i < 6; i++) {
+            // If this motor has distance to travel
+            if (steppers[i]->distanceToGo() != 0) {
+                // Run the motor
+                steppers[i]->run();
+                anyMotorRunning = true;
+                
+                                // Activate the motor if it's moving
+                digitalWrite(_pinConfig.stepperPins[i][2], LOW);
+                
+                // Debug output (only for selected joint to avoid spam)
+                if (i == selectedJoint) {
+                    Debug::print(F("Stepper "));
+                    Debug::print(i);
+                    Debug::print(F(" moving to position "));
+                    Debug::print(steppers[i]->targetPosition());
+                    Debug::print(F(", current: "));
+                    Debug::print(steppers[i]->currentPosition());
+                    Debug::print(F(", remaining: "));
+                    Debug::println(steppers[i]->distanceToGo());
+                }
+            } else {
+                // Disable motor when target reached (power saving)
+                digitalWrite(_pinConfig.stepperPins[i][2], HIGH);
+            }
+        }
+        
+        // If any motors moved, synchronize the kinematic model
+        if (anyMotorRunning) {
+            RobotSystem::synchronizeKinematicsWithSteppers();
+        }
     }
     
     bool homeJoint(int jointIndex) {
         static bool homingJointStarted = false;
         static bool coarseHomingDone = false;
         static int lastSwitchState = HIGH;
-    
+        
         // First initialization for this joint
         if (!homingJointStarted) {
             homingJointStarted = true;
             coarseHomingDone = false;
-    
+            
             Debug::print(F("Starting homing for joint "));
             Debug::println(jointIndex + 1);
-    
+            
             // Enable motor
             digitalWrite(_pinConfig.stepperPins[jointIndex][2], LOW);
-    
+            
             // Set fast homing speed for coarse search
             steppers[jointIndex]->setSpeed(-_stepperConfig[jointIndex].homingSpeed);
-    
+            
             // Remember current position
             steppers[jointIndex]->setCurrentPosition(0);
-    
-            // Read initial state of limit switch
+            
+            // Read initial state of endstop
             lastSwitchState = digitalRead(_pinConfig.stepperPins[jointIndex][3]);
-    
+            
             // Debug output
-            Debug::print(F("Limit switch pin: "));
+            Debug::print(F("Endstop pin: "));
             Debug::print(_pinConfig.stepperPins[jointIndex][3]);
-            Debug::print(F(", Initial state: "));
+            Debug::print(F(", initial state: "));
             Debug::println(lastSwitchState == HIGH ? "HIGH" : "LOW");
         }
-    
-        // Check limit switch
+        
+        // Check endstop
         int limitSwitchPin = _pinConfig.stepperPins[jointIndex][3];
         int currentSwitchState = digitalRead(limitSwitchPin);
-    
+        
         // Phase 1: Coarse search for the limit switch
         if (!coarseHomingDone) {
             if (currentSwitchState != lastSwitchState && currentSwitchState == LOW) {
                 Debug::print(F("Limit switch for joint "));
                 Debug::print(jointIndex + 1);
                 Debug::println(F(" reached during coarse homing"));
-    
+                
                 // Stop motor
                 steppers[jointIndex]->setSpeed(0);
                 steppers[jointIndex]->stop();
-    
+                
                 delay(100);
-    
-                // Back away from the limit switch (positive direction, away from the switch)
-                steppers[jointIndex]->move(100); // About 5 degrees back at 20 steps/degree
+                
+                // Back away from limit switch (positive direction, away from limit switch)
+                steppers[jointIndex]->move(100); // About 5 degrees back with 20 steps/degree
                 steppers[jointIndex]->setSpeed(_stepperConfig[jointIndex].homingSpeed * 0.5);
-    
+                
                 while (steppers[jointIndex]->distanceToGo() != 0) {
                     steppers[jointIndex]->runSpeed();
                 }
-    
+                
                 delay(100);
-    
-                Debug::print(F("Retraction complete, starting precise homing for joint "));
+                
+                Debug::print(F("Retreat completed, starting precise homing for joint "));
                 Debug::println(jointIndex + 1);
-    
+                
                 // Start slow homing (1/4 of normal speed)
                 steppers[jointIndex]->setSpeed(-_stepperConfig[jointIndex].homingSpeed * 0.25);
-    
+                
                 coarseHomingDone = true;
                 lastSwitchState = HIGH; // Reset for fine search
             }
-    
+            
             lastSwitchState = currentSwitchState;
             steppers[jointIndex]->runSpeed();
         }
@@ -205,75 +227,29 @@ namespace StepperSystem {
                 Debug::print(F(" reached during precise homing (Pin "));
                 Debug::print(limitSwitchPin);
                 Debug::println(F(")"));
-    
+                
                 steppers[jointIndex]->setSpeed(0);
                 steppers[jointIndex]->stop();
-    
+                
                 steppers[jointIndex]->setCurrentPosition(0);
-    
+                
                 digitalWrite(_pinConfig.stepperPins[jointIndex][2], HIGH);
-    
-                // FIX: Use RobotSystem::getKinematics() instead of robotKin
+                
                 JointAngles currentAngles = RobotSystem::getKinematics()->getCurrentJointAngles();
                 currentAngles.angles[jointIndex] = 0.0f;
                 RobotSystem::getKinematics()->setCurrentJointAngles(currentAngles);
-    
+                
                 homingJointStarted = false;
                 coarseHomingDone = false;
-                return true; // Homing complete for this joint
+                return true; // Homing for this joint completed
             }
-    
+            
             lastSwitchState = currentSwitchState;
             steppers[jointIndex]->runSpeed();
         }
-    
-        return false; // Homing still in progress for this joint
-    }
-    
-    void synchronizeKinematicsWithSteppers() {
-        // FIX: Use RobotSystem::getKinematics() instead of robotKin
-        JointAngles currentAngles = RobotSystem::getKinematics()->getCurrentJointAngles();
-        bool updated = false;
         
-        for (int i = 0; i < 6; i++) {
-            // Convert current stepper position to degrees
-            long currentSteps = steppers[i]->currentPosition();
-            float currentDegrees = currentSteps / _stepperConfig[i].stepsPerDegree;
-            float currentRadians = currentDegrees * M_PI / 180.0;
-            
-            // If there's a difference, update the kinematics
-            if (fabs(currentRadians - currentAngles.angles[i]) > 0.01) {
-                currentAngles.angles[i] = currentRadians;
-                updated = true;
-                
-                Debug::print(F("Synchronizing joint "));
-                Debug::print(i + 1);
-                Debug::print(F(": "));
-                Debug::print(currentDegrees);
-                Debug::print(F("° ("));
-                Debug::print(currentSteps);
-                Debug::println(F(" steps)"));
-            }
-        }
-        
-        if (updated) {
-            RobotSystem::getKinematics()->setCurrentJointAngles(currentAngles);
-        }
+        return false; // Homing for this joint still in progress
     }
-    
-    void exitKinematicMode() {
-        for (int i = 0; i < 6; ++i) {
-            steppers[i]->moveTo(steppers[i]->currentPosition());
-        }
-        synchronizeKinematicsWithSteppers();
-    }
-    
-    void enableMotor(int index, bool enable) {
-        digitalWrite(_pinConfig.stepperPins[index][2], enable ? LOW : HIGH);
-    }
-    
-    // Selected joint
-    int selectedJoint = 0;
     
     int getSelectedJoint() {
         return selectedJoint;
@@ -282,6 +258,20 @@ namespace StepperSystem {
     void setSelectedJoint(int joint) {
         if (joint >= 0 && joint < 6) {
             selectedJoint = joint;
+        }
+    }
+    
+    // Enable all motors
+    void enableAllMotors() {
+        for (int i = 0; i < 6; i++) {
+            digitalWrite(_pinConfig.stepperPins[i][2], LOW);
+        }
+    }
+    
+    // Disable all motors
+    void disableAllMotors() {
+        for (int i = 0; i < 6; i++) {
+            digitalWrite(_pinConfig.stepperPins[i][2], HIGH);
         }
     }
 }

@@ -4,6 +4,11 @@
 #include <TimerOne.h>
 
 namespace TimerLoop {
-    void begin(void (*controlFunc)());
-    void loop(void (*joystickFunc)(), void (*displayFunc)());
+    // Add the correct signature with all three callbacks
+    void begin(void (*controlFunc)() = nullptr, 
+               void (*joystickFunc)() = nullptr, 
+               void (*displayFunc)() = nullptr);
+    
+    // Fix the loop signature to take no arguments
+    void loop();
 }

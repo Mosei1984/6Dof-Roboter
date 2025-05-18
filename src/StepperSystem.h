@@ -1,24 +1,33 @@
 #pragma once
 
+#include <Arduino.h>
 #include <AccelStepper.h>
-#include "config.h"
+#include "RobotKinematics.h"
 
 namespace StepperSystem {
-    // Public stepper motor array
-    extern AccelStepper* steppers[6];
-    
-    // Initialize stepper motors and limit switches
+    // Initialize the stepper system
     void init();
     
-    // Update stepper motors (called at high frequency)
+    // Update function - call in main loop
     void update();
     
-    // Test stepper motors with basic movements
-    void testSteppers();
-    
-    // Home a specific joint (returns true when done)
+    // Homing function for a specific joint
     bool homeJoint(int jointIndex);
     
-    // Synchronize kinematic model with stepper positions
-    void synchronizeKinematicsWithSteppers();
+    // Get current angles from stepper positions
+    JointAngles getCurrentAnglesFromSteppers();
+    
+    // Synchronize kinematics with stepper positions
+    void synchronizeWithKinematics();
+    
+    // Selected joint for joint mode
+    int getSelectedJoint();
+    void setSelectedJoint(int joint);
+    
+    // Steps per degree for a specific joint
+    float getStepsPerDegree(int jointIndex);
+    void setStepsPerDegree(int jointIndex, float stepsPerDegree);
+    
+    // Access to stepper instances
+    extern AccelStepper* steppers[6];
 }

@@ -1,4 +1,5 @@
 #include "config.h"
+#include "mechanical_config.h" // Neue Header-Datei einbinden
 
 // Globale Instanzen der Konfigurationen
 PinConfig _pinConfig;
@@ -75,92 +76,122 @@ const unsigned char PROGMEM robotArmBitmap[] = {
 };
 
 void loadDefaultPinConfig() {
-    _pinConfig.leftXPin = 40;
-    _pinConfig.leftYPin = 41;
-    _pinConfig.leftBtnPin = 27;
-    _pinConfig.rightXPin = 38;
-    _pinConfig.rightYPin = 39;
-    _pinConfig.rightBtnPin = 26;
+      _pinConfig.leftXPin = 40;
+      _pinConfig.leftYPin = 41;
+      _pinConfig.leftBtnPin = 27;
+      _pinConfig.rightXPin = 38;
+      _pinConfig.rightYPin = 39;
+      _pinConfig.rightBtnPin = 26;
 
-    // Stepper pins
-    _pinConfig.stepperPins[0][0] = 2;   // Base - STEP
-    _pinConfig.stepperPins[0][1] = 3;   // Base - DIR
-    _pinConfig.stepperPins[0][2] = 4;   // Base - ENABLE
-    _pinConfig.stepperPins[0][3] = 22;  // Base - LIMIT
+      // Stepper pins
+      _pinConfig.stepperPins[0][0] = 2;   // Base - STEP
+      _pinConfig.stepperPins[0][1] = 3;   // Base - DIR
+      _pinConfig.stepperPins[0][2] = 4;   // Base - ENABLE
+      _pinConfig.stepperPins[0][3] = 22;  // Base - LIMIT
     
-    _pinConfig.stepperPins[1][0] = 5;   // Shoulder - STEP
-    _pinConfig.stepperPins[1][1] = 6;   // Shoulder - DIR
-    _pinConfig.stepperPins[1][2] = 7;   // Shoulder - ENABLE
-    _pinConfig.stepperPins[1][3] = 23;  // Shoulder - LIMIT
+      _pinConfig.stepperPins[1][0] = 5;   // Shoulder - STEP
+      _pinConfig.stepperPins[1][1] = 6;   // Shoulder - DIR
+      _pinConfig.stepperPins[1][2] = 7;   // Shoulder - ENABLE
+      _pinConfig.stepperPins[1][3] = 23;  // Shoulder - LIMIT
     
-    _pinConfig.stepperPins[2][0] = 8;   // Elbow - STEP
-    _pinConfig.stepperPins[2][1] = 9;   // Elbow - DIR
-    _pinConfig.stepperPins[2][2] = 10;  // Elbow - ENABLE
-    _pinConfig.stepperPins[2][3] = 24;  // Elbow - LIMIT
+      _pinConfig.stepperPins[2][0] = 8;   // Elbow - STEP
+      _pinConfig.stepperPins[2][1] = 9;   // Elbow - DIR
+      _pinConfig.stepperPins[2][2] = 10;  // Elbow - ENABLE
+      _pinConfig.stepperPins[2][3] = 24;  // Elbow - LIMIT
     
-    _pinConfig.stepperPins[3][0] = 11;  // Wrist Pitch - STEP
-    _pinConfig.stepperPins[3][1] = 12;  // Wrist Pitch - DIR
-    _pinConfig.stepperPins[3][2] = 41;  // Wrist Pitch - ENABLE
-    _pinConfig.stepperPins[3][3] = 25;  // Wrist Pitch - LIMIT
+      _pinConfig.stepperPins[3][0] = 11;  // Wrist Pitch - STEP
+      _pinConfig.stepperPins[3][1] = 12;  // Wrist Pitch - DIR
+      _pinConfig.stepperPins[3][2] = 41;  // Wrist Pitch - ENABLE
+      _pinConfig.stepperPins[3][3] = 25;  // Wrist Pitch - LIMIT
     
-    _pinConfig.stepperPins[4][0] = 14;  // Wrist Roll - STEP
-    _pinConfig.stepperPins[4][1] = 15;  // Wrist Roll - DIR
-    _pinConfig.stepperPins[4][2] = 16;  // Wrist Roll - ENABLE
-    _pinConfig.stepperPins[4][3] = 29;  // Wrist Roll - LIMIT
+      _pinConfig.stepperPins[4][0] = 14;  // Wrist Roll - STEP
+      _pinConfig.stepperPins[4][1] = 15;  // Wrist Roll - DIR
+      _pinConfig.stepperPins[4][2] = 16;  // Wrist Roll - ENABLE
+      _pinConfig.stepperPins[4][3] = 29;  // Wrist Roll - LIMIT
     
-    _pinConfig.stepperPins[5][0] = 17;  // Gripper - STEP
-    _pinConfig.stepperPins[5][1] = 20;  // Gripper - DIR
-    _pinConfig.stepperPins[5][2] = 21;  // Gripper - ENABLE
-    _pinConfig.stepperPins[5][3] = 28;  // Gripper - LIMIT
+      _pinConfig.stepperPins[5][0] = 17;  // Gripper - STEP
+      _pinConfig.stepperPins[5][1] = 20;  // Gripper - DIR
+      _pinConfig.stepperPins[5][2] = 21;  // Gripper - ENABLE
+      _pinConfig.stepperPins[5][3] = 28;  // Gripper - LIMIT
     
-    // Error LED pin
-    _pinConfig.errorLedPin = 13;
+      // Error LED pin
+      _pinConfig.errorLedPin = 13;
 
-    // OLED Pins
-    _pinConfig.oledSdaPin = 18;
-    _pinConfig.oledSclPin = 19;
+      // OLED Pins
+      _pinConfig.oledSdaPin = 18;
+      _pinConfig.oledSclPin = 19;
 }
 
 void loadDefaultJoystickConfig() {
-    // Totbereich für Joysticks - wichtig zur Vermeidung von Drift
-    _joystickConfig.deadband = 50;    // Wert zwischen 0-512 (bei 10-bit ADC)
+      // Totbereich für Joysticks - wichtig zur Vermeidung von Drift
+      _joystickConfig.deadband = 50;    // Wert zwischen 0-512 (bei 10-bit ADC)
     
-    // Empfindlichkeit für verschiedene Funktionen
-    _joystickConfig.sensitivity = 0.03; // Standardempfindlichkeit für Gelenkbewegungen
+      // Empfindlichkeit für verschiedene Funktionen
+      _joystickConfig.sensitivity = 0.03; // Standardempfindlichkeit für Gelenkbewegungen
 }
 
 void loadDefaultStepperConfig() {
+    // Standardwerte für Stepper-Konfiguration
     for (int i = 0; i < 6; i++) {
-        // Grundeinstellungen für alle Motoren
-        _stepperConfig[i].maxSpeed = 1000;        // 1000 Schritte pro Sekunde max
-        _stepperConfig[i].acceleration = 500;     // Beschleunigung 
-        _stepperConfig[i].stepsPerDegree = 20;    // 20 Schritte pro Grad (bei 1,8° Motor mit 1/16 Mikroschritten)
-        _stepperConfig[i].homingSpeed = 200;      // Langsamer beim Homing (Schritte/Sek)
+      // Grundeinstellungen
+      float stepsPerRev = 200.0f * 16.0f; // 200 Schritte pro Umdrehung, 16 Mikroschritte
+    
+      // Mechanische Übersetzung anwenden
+      _stepperConfig[i].stepsPerDegree = stepsPerRev * gearRatios[i] / 360.0f;
+    
+      // Standardwerte für Geschwindigkeit und Beschleunigung
+      _stepperConfig[i].maxSpeed = 1000.0f;
+      _stepperConfig[i].acceleration = 500.0f;
+      _stepperConfig[i].homingSpeed = 200.0f;
+    
+      // Standard-Positionsgrenzen (werden unten überschrieben)
+      _stepperConfig[i].minPosition = -stepsPerRev * gearRatios[i] / 2;
+      _stepperConfig[i].maxPosition =  stepsPerRev * gearRatios[i] / 2;
     }
+  
+    // Spezifische Positionsgrenzen für alle Achsen
+  
+    // Achse 0 (Basis) - typischerweise 270° Bewegungsbereich
+    _stepperConfig[0].minPosition = -7500; // -135° bei ~55.5 steps/degree
+    _stepperConfig[0].maxPosition = 7500;  // +135° bei ~55.5 steps/degree
+  
+    // Achse 1 (Schulter)
+    _stepperConfig[1].minPosition = -4500; // -90° * 50 steps/degree = -4500 steps
+    _stepperConfig[1].maxPosition = 9000;  // 180° * 50 steps/degree = 9000 steps
+  
+    // Achse 2 (Ellbogen)
+    _stepperConfig[2].minPosition = -9000; // -180° * 50 steps/degree = -9000 steps
+    _stepperConfig[2].maxPosition = 9000;  // 180° * 50 steps/degree = 9000 steps
+  
+    // Achse 3 (Handgelenk Pitch)
+    _stepperConfig[3].minPosition = -4500; // -90° * 50 steps/degree = -4500 steps
+    _stepperConfig[3].maxPosition = 4500;  // 90° * 50 steps/degree = 4500 steps
+  
+    // Achse 4 (Handgelenk Roll) - volle 360° Drehung
+    _stepperConfig[4].minPosition = -9000; // -180° bei ~50 steps/degree
+    _stepperConfig[4].maxPosition = 9000;  // +180° bei ~50 steps/degree
+  
+    // Achse 5 (Greifer) - keine speziellen Begrenzungen, dynamische Berechnung beibehalten
+    // Die Grenzen bleiben bei dem, was in der Schleife gesetzt wurde
+}
+
+// Initialisierung der Stepper-Motoren
+void initializeRobotArm() {
+    // Bestehender Code zum Initialisieren der Stepper-Objekte...
+  
+    for (int i = 0; i < 6; i++) {
+      // Step/Dir Pins konfigurieren
+      _steppers[i] = new AccelStepper(AccelStepper::DRIVER, 
+                                     _pinConfig.stepperPins[i][0],
+                                     _pinConfig.stepperPins[i][1]);
     
-    // Individualisierte Grenzen für jeden Motor
-    // Verwendung der Winkelgrenzen aus robotConfig
-    // Basis
-    _stepperConfig[0].minPosition = -9000;  // -180° * 50 steps/degree = -9000 steps
-    _stepperConfig[0].maxPosition = 9000;   // 180° * 50 steps/degree = 9000 steps
+      // Geschwindigkeiten setzen
+      _steppers[i]->setMaxSpeed(_stepperConfig[i].maxSpeed);
+      _steppers[i]->setAcceleration(_stepperConfig[i].acceleration);
     
-    // Schulter
-    _stepperConfig[1].minPosition = -4500;  // -90° * 50 steps/degree = -4500 steps
-    _stepperConfig[1].maxPosition = 9000;   // 180° * 50 steps/degree = 9000 steps
-    
-    // Ellbogen
-    _stepperConfig[2].minPosition = -9000;  // -180° * 50 steps/degree = -9000 steps
-    _stepperConfig[2].maxPosition = 9000;   // 180° * 50 steps/degree = 9000 steps
-    
-    // Handgelenk Pitch
-    _stepperConfig[3].minPosition = -4500;  // -90° * 50 steps/degree = -4500 steps
-    _stepperConfig[3].maxPosition = 4500;   // 90° * 50 steps/degree = 4500 steps
-    
-    // Handgelenk Roll
-    _stepperConfig[4].minPosition = -9000;  // -180° * 50 steps/degree = -9000 steps
-    _stepperConfig[4].maxPosition = 9000;   // 180° * 50 steps/degree = 9000 steps
-    
-    // Handgelenk Yaw/Greifer
-    _stepperConfig[5].minPosition = 0;       // 0° * 50 steps/degree = 0 steps
-    _stepperConfig[5].maxPosition = 3000;    // 60° * 50 steps/degree = 3000 steps (Greifer hat kleineren Bereich)
+      // Drehrichtung anpassen falls notwendig
+      if (invertMotorDirection[i]) {
+        _steppers[i]->setPinsInverted(true, false, false);
+      }
+    }
 }

@@ -1,12 +1,14 @@
 #pragma once
 
+#include <Arduino.h>
 #include <Adafruit_SSD1306.h>
+#include "RobotKinematics.h"
 
 namespace DisplaySystem {
     // Initialize display
     void init();
     
-    // Update display based on current state (called at 60Hz)
+    // Update display based on current state (called periodically)
     void update();
     
     // Display screens for different states
@@ -25,6 +27,26 @@ namespace DisplaySystem {
     // Get display instance
     Adafruit_SSD1306* getDisplay();
     
-    // Display progress during center movement
+    // Progress display
     void displayHomingCenterProgress(float progress);
+    
+    // Gear menu functions
+    void displayGearMenu();
+    void processGearMenu();
+    void saveGearConfigToSD();
+    bool loadGearConfigFromSD();
+    
+    // Gear menu active status
+    bool isGearMenuActive();
+    void setGearMenuActive(bool active);
+    
+    // Get selected gear axis
+    int getSelectedGearAxis();
+    void setSelectedGearAxis(int axis);
+    
+    // Home position storage functions
+    void saveHomePositionToSD(const JointAngles& angles);
+    bool loadHomePositionFromSD(JointAngles& angles);
+    void listHomePositionsOnSD();
+    void deleteHomePositionFromSD(const char* filename);
 }

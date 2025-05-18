@@ -1,6 +1,9 @@
 #pragma once
 
+#include <Arduino.h>
 #include "RobotKinematics.h"
+
+#define ROBOT_HOME_MAGIC 0x42ABCDEF
 
 namespace RobotSystem {
     // System states
@@ -9,7 +12,9 @@ namespace RobotSystem {
         STATE_JOINT_MODE,
         STATE_KINEMATIC_MODE,
         STATE_HOMING_MODE,
-        STATE_CALIBRATION_MODE
+        STATE_CALIBRATION_MODE,
+        STATE_GEAR_CONFIG_MODE,  // Add this enum
+        STATE_CONFIG_MODE        // Add this enum
     };
     
     // Homing menu options
@@ -22,48 +27,61 @@ namespace RobotSystem {
         HOMING_MENU_COUNT
     };
     
-    // Initialize robot system
-    void init();
+    // String names for menu options (defined in cpp)
+    extern const char* homingMenuOptionNames[HOMING_MENU_COUNT];
     
-    // Initialize robot configuration with default values
+    // Basic initialization
+    void init();
     void initRobotConfig();
     
-    // Robot magic number for EEPROM validation
-    #define ROBOT_HOME_MAGIC 0x42ABCDEF
+    // Main update function
+    void update();
     
-    // State management
+    // State machine processing
+    void processCurrentState();
+    
+    // State getters and setters
     SystemState getState();
-    void setState(SystemState newState);
+    void setState(SystemState state);
+    
+    // Homing functions
+    void processHomingMode();
+    void processHomingMenu();
+    void processMoveToCenter();
+    
+    // Home position storage
+    bool saveRobotHome(const JointAngles& angles);
+    bool loadRobotHome(JointAngles& angles);
+    bool clearRobotHome();
+    
+    // Timing
     unsigned long getStateChangeTime();
     void setStateChangeTime(unsigned long time);
-    bool isCalibrationLocked();
-    void setCalibrationLocked(bool locked);
     
-    // Homing operations
-    void processHomingMenu();
-    void processHomingMode();
+    // Homing status
     bool isHomingStarted();
     void setHomingStarted(bool started);
     int getHomingJointIndex();
     void setHomingJointIndex(int index);
+    
+    // Menu selection
     int getHomingMenuSelection();
     void setHomingMenuSelection(int selection);
     int getHomingMenuOptionCount();
     const char* getHomingMenuOptionName(int option);
     
-    // Home position management
-    void saveRobotHome(const JointAngles& angles);
-    bool loadRobotHome(JointAngles& angles);
-    void clearRobotHome();
+    // Button state
+    bool isCalibrationLocked();
+    void setCalibrationLocked(bool locked);
     
-    // Access to robot kinematics
+    // Kinematics access
     RobotKinematics* getKinematics();
-    
-    // Process modes
-    void processCurrentState();
-    // Update robot system state
-    void update();
-    
-    // New method for processing homing menu selection
-    void processHomingMenuSelection();
+
+    // Add exit kinematic mode function
+    void exitKinematicMode();
+    void synchronizeKinematicsWithSteppers();
+    // SD card home functions
+    bool saveRobotHomeToSD(const JointAngles& angles);
+    bool loadRobotHomeFromSD(JointAngles& angles);
+    bool clearRobotHomeFromSD();
 }

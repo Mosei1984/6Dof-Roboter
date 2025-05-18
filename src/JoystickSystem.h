@@ -1,10 +1,10 @@
 #pragma once
 
+#include <Arduino.h>
 #include "joystick.h"
-#include "kalmanfilter.h"
 
 namespace JoystickSystem {
-    // Joystick state enum (moved from cpp file to header)
+    // Joystick states
     enum JoystickState {
         JOYSTICK_CENTERED,
         JOYSTICK_LEFT,
@@ -13,35 +13,28 @@ namespace JoystickSystem {
         JOYSTICK_DOWN
     };
     
-    // Initialize joystick system
-    void init();
-    
-    // Update joystick readings
-    void update();
-    
-    // Process button inputs
-    void processButtonInput();
-    
-    // Process joint control mode
-    void processJointControl();
-    
-    // Process kinematic control mode
-    void processKinematicControl();
-    
-    // Exit kinematic mode (helper function)
-    void exitKinematicMode();
-    
-    // Selected joint management
-    int getSelectedJoint();
-    void setSelectedJoint(int joint);
-    
-    // Basic joystick calibration (center position)
-    void calibrateJoysticks();
-    
-    // Full joystick calibration (extremes and center)
-    void startFullCalibration();
-    
-    // Joystick objects access
+    // Global joystick instances
     extern Joystick* leftJoystick;
     extern Joystick* rightJoystick;
+    
+    // Initialization
+    void init();
+    void update();
+    
+    // Calibration
+    void calibrateJoysticks();
+    void startFullCalibration();
+    
+    // Input processing
+    void processJointControl();
+    void processKinematicControl();
+    void processButtonInput();
+    
+    // Joystick state getters
+    JoystickState getJoystickXState();
+    JoystickState getJoystickYState();
+    
+    // Button state getters (new)
+    bool isLeftButtonPressed();
+    bool isRightButtonPressed();
 }
